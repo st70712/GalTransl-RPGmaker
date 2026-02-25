@@ -15,6 +15,10 @@ venv/
 *.zip
 *.bak
 
+# Generated / output directories
+exported/
+Game_translated/
+
 # OS
 .DS_Store
 Thumbs.db
