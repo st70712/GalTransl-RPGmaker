@@ -42,30 +42,32 @@ jobs:
         run: python export_script.py Game -o exported_ci
 
       - name: Validate exported JSON structure
-        run: python -c "
-import json, sys
-with open('exported_ci/script.json', encoding='utf-8') as f:
-    data = json.load(f)
-assert 'info' in data, 'Missing info section'
-assert 'strings' in data, 'Missing strings section'
-count = data['info']['string_count']
-actual = len(data['strings'])
-assert count == actual, f'string_count mismatch: {count} != {actual}'
-print(f'Export OK: {actual} strings')
-"
+        run: |
+          python - << 'EOF'
+          import json, sys
+          with open('exported_ci/script.json', encoding='utf-8') as f:
+              data = json.load(f)
+          assert 'info' in data, 'Missing info section'
+          assert 'strings' in data, 'Missing strings section'
+          count = data['info']['string_count']
+          actual = len(data['strings'])
+          assert count == actual, 'string_count mismatch: {} != {}'.format(count, actual)
+          print('Export OK: {} strings'.format(actual))
+          EOF
 
       - name: Fill translated field with original text (simulate translation)
-        run: python -c "
-import json
-with open('exported_ci/script.json', encoding='utf-8') as f:
-    data = json.load(f)
-for entry in data['strings']:
-    if not entry.get('translated'):
-        entry['translated'] = entry['original']
-with open('exported_ci/script.json', 'w', encoding='utf-8') as f:
-    json.dump(data, f, ensure_ascii=False, indent=2)
-print('Filled translated fields')
-"
+        run: |
+          python - << 'EOF'
+          import json
+          with open('exported_ci/script.json', encoding='utf-8') as f:
+              data = json.load(f)
+          for entry in data['strings']:
+              if not entry.get('translated'):
+                  entry['translated'] = entry['original']
+          with open('exported_ci/script.json', 'w', encoding='utf-8') as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+          print('Filled translated fields')
+          EOF
 
       - name: Validate translation progress
         run: python import_script.py validate exported_ci/script.json
