@@ -17,7 +17,7 @@ import argparse
 import shutil
 import re
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from collections import defaultdict
 
 
@@ -77,8 +77,7 @@ def build_translation_index(entries: List[Dict]) -> Dict[str, str]:
     for entry in entries:
         location = entry.get("location", "")
         translated = entry.get("translated", "")
-        original = entry.get("original", "")
-        
+
         # Only use if there's a translation
         if translated:
             index[location] = translated
@@ -1047,17 +1046,17 @@ def main():
         
         result = validate_translations(args.translation)
         
-        print(f"\n=== Translation Validation ===")
+        print("\n=== Translation Validation ===")
         print(f"Total strings: {result['total']}")
         print(f"Translated: {result['translated']}")
         print(f"Progress: {result['percentage']:.1f}%")
         
-        print(f"\nBy context:")
+        print("\nBy context:")
         for ctx, counts in sorted(result['by_context'].items(), key=lambda x: -x[1]['total']):
             pct = (counts['translated'] / counts['total'] * 100) if counts['total'] > 0 else 0
             print(f"  {ctx}: {counts['translated']}/{counts['total']} ({pct:.1f}%)")
         
-        print(f"\nBy file:")
+        print("\nBy file:")
         for filename, counts in sorted(result['by_file'].items(), key=lambda x: -x[1]['total']):
             pct = (counts['translated'] / counts['total'] * 100) if counts['total'] > 0 else 0
             print(f"  {filename}: {counts['translated']}/{counts['total']} ({pct:.1f}%)")
@@ -1091,7 +1090,7 @@ def main():
                 backup=not args.no_backup
             )
             
-            print(f"\n=== Import Summary ===")
+            print("\n=== Import Summary ===")
             print(f"Total translations applied: {result['total_applied']}")
             print(f"Files processed: {result['files_processed']}")
             
@@ -1121,7 +1120,7 @@ def main():
 
 def _print_verify_results(result: Dict) -> None:
     """Print structural verification results."""
-    print(f"\n=== Structural Verification ===")
+    print("\n=== Structural Verification ===")
     print(f"Files checked: {result['files_checked']}")
     print(f"Errors: {result['errors']}")
     print(f"Warnings: {result['warnings']}")

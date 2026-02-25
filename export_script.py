@@ -17,8 +17,7 @@ import argparse
 import re
 from pathlib import Path
 from dataclasses import dataclass, asdict, field
-from typing import List, Dict, Any, Optional, Tuple
-from collections import OrderedDict
+from typing import List, Dict, Any, Optional
 
 
 # RPG Maker event command codes for text
@@ -926,7 +925,7 @@ def export_all(game_dir: Path, output_dir: Path, split_by_file: bool = False):
         json.dump(format_spec, f, ensure_ascii=False, indent=2)
     print(f"Generated: {format_spec_file}")
     
-    print(f"\n=== Export Summary ===")
+    print("\n=== Export Summary ===")
     print(f"Game Title: {game_title}")
     print(f"Total strings: {len(all_entries)}")
     print(f"Source files: {len(source_files)}")
@@ -936,7 +935,7 @@ def export_all(game_dir: Path, output_dir: Path, split_by_file: bool = False):
     for entry in all_entries:
         context_counts[entry.context] = context_counts.get(entry.context, 0) + 1
     
-    print(f"\nBy context:")
+    print("\nBy context:")
     for ctx, count in sorted(context_counts.items(), key=lambda x: -x[1]):
         print(f"  {ctx}: {count}")
 
