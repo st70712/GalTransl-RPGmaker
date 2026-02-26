@@ -398,6 +398,61 @@ def import_database_entries(db_file: Path, trans_index: Dict[str, str],
     return applied
 
 
+def export_untranslated(json_path: Path, output_path: Path,
+                        contexts: Optional[List[str]] = None) -> int:
+    """
+    Export untranslated strings to a new JSON file for manual translation.
+    The output file preserves the same structure as the input so it can be
+    used directly with the import command after filling in the translations.
+
+    Args:
+        json_path:   Path to the source translation JSON file or directory.
+        output_path: Destination JSON file path.
+        contexts:    If given, only export entries whose ``context`` field is
+                     in this list.  Pass ``None`` to export all contexts.
+
+    Returns the number of untranslated strings exported.
+    """
+    # Normalise to a set for O(1) lookup; None means "all contexts"
+    ctx_filter: Optional[set] = set(contexts) if contexts is not None else None
+
+    # Load original info block (only available when input is a single file)
+    info: Dict = {}
+    if json_path.is_file():
+        with open(json_path, 'r', encoding='utf-8') as f:
+            raw = json.load(f)
+        info = dict(raw.get("info", {}))
+
+    translations = load_all_translations(json_path)
+
+    untranslated: List[Dict] = []
+    for entries in translations.values():
+        for entry in entries:
+            if entry.get("translated"):
+                continue
+            if ctx_filter is not None and entry.get("context") not in ctx_filter:
+                continue
+            untranslated.append(entry)
+
+    # Sort by original index so the file is easy to review in order
+    untranslated.sort(key=lambda e: e.get("index", 0))
+
+    ctx_desc = ("、".join(sorted(ctx_filter)) if ctx_filter is not None
+                else "全部")
+    info["string_count"] = len(untranslated)
+    info["context_filter"] = list(sorted(ctx_filter)) if ctx_filter is not None else "all"
+    info["note"] = (f"未翻譯文本 (context 篩選: {ctx_desc}) — "
+                    "請填寫每個條目的 translated 欄位，完成後可直接用 import 指令導入")
+
+    output_data = {"info": info, "strings": untranslated}
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(output_data, f, ensure_ascii=False, indent=2)
+
+    return len(untranslated)
+
+
 def validate_translations(json_path: Path) -> Dict:
     """
     Validate translation file and show progress.
@@ -991,6 +1046,23 @@ def main():
         type=Path,
         help="Path to translation JSON file or directory"
     )
+    validate_parser.add_argument(
+        "-u", "--output-untranslated",
+        type=Path,
+        default=None,
+        metavar="OUTPUT_JSON",
+        help="將未翻譯的條目輸出至指定 JSON 檔案，方便手動翻譯後再導入"
+    )
+    validate_parser.add_argument(
+        "-c", "--context",
+        nargs="+",
+        default=["dialog", "choice"],
+        metavar="CONTEXT",
+        dest="contexts",
+        help=("搭配 -u 使用：指定要輸出的 context 類型（可多個，空格分隔）。"
+              "傳入 all 表示輸出所有類型。"
+              "預設: dialog choice")
+    )
     
     # Verify command
     verify_parser = subparsers.add_parser(
@@ -1049,6 +1121,7 @@ def main():
         print("\n=== Translation Validation ===")
         print(f"Total strings: {result['total']}")
         print(f"Translated: {result['translated']}")
+        print(f"Untranslated: {result['total'] - result['translated']}")
         print(f"Progress: {result['percentage']:.1f}%")
         
         print("\nBy context:")
@@ -1060,6 +1133,21 @@ def main():
         for filename, counts in sorted(result['by_file'].items(), key=lambda x: -x[1]['total']):
             pct = (counts['translated'] / counts['total'] * 100) if counts['total'] > 0 else 0
             print(f"  {filename}: {counts['translated']}/{counts['total']} ({pct:.1f}%)")
+        
+        if args.output_untranslated is not None:
+            # -c all → pass None so every context is included
+            ctx_list: Optional[List[str]] = (
+                None if args.contexts == ["all"] else args.contexts
+            )
+            ctx_label = "全部" if ctx_list is None else "、".join(ctx_list)
+            count = export_untranslated(args.translation, args.output_untranslated,
+                                        contexts=ctx_list)
+            if count > 0:
+                print(f"\n已將 {count} 條未翻譯文本輸出至: {args.output_untranslated}")
+                print(f"  (context 篩選: {ctx_label})")
+                print("請填寫各條目的 translated 欄位後，使用 import 指令導入。")
+            else:
+                print(f"\n✓ 指定 context ({ctx_label}) 的文本均已翻譯，無需輸出未翻譯檔案。")
         
         return 0
     

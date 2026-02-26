@@ -91,6 +91,15 @@ conda activate galtransl
 # 驗證翻譯進度
 python import_script.py validate exported/script.json
 
+# 驗證並將未翻譯文本（預設 dialog、choice）輸出為獨立 JSON
+python import_script.py validate exported/script.json -u exported/untranslated.json
+
+# 指定要輸出的 context 類型（可多個，空格分隔）
+python import_script.py validate exported/script.json -u exported/untranslated.json -c dialog choice message
+
+# 輸出所有 context 的未翻譯文本
+python import_script.py validate exported/script.json -u exported/untranslated.json -c all
+
 # 導入翻譯（會自動備份原始檔案到 Game/backup）
 python import_script.py import Game exported/script.json
 
@@ -109,6 +118,13 @@ python import_script.py verify Game Game_translated
 
 **validate 命令：**
 驗證翻譯進度，顯示各類型和各檔案的翻譯完成度。
+
+使用 `-u OUTPUT_JSON` 可將未翻譯的條目匯出為獨立 JSON 檔案，方便手動翻譯後再以 `import` 指令導入。搭配 `-c CONTEXT [CONTEXT ...]` 可篩選要匯出的文本類型，預設為 `dialog choice`；傳入 `all` 可匯出所有類型。
+
+**validate 命令參數：**
+- `translation` - 翻譯 JSON 檔案或目錄
+- `-u, --output-untranslated OUTPUT_JSON` - 將未翻譯條目輸出至指定 JSON 檔案
+- `-c, --context CONTEXT [CONTEXT ...]` - 篩選輸出的 context 類型（預設：`dialog choice`；傳入 `all` 表示不篩選）
 
 **verify 命令：**
 比對原始遊戲資料與翻譯後遊戲資料的結構完整性，檢查是否存在會影響遊戲運行的問題。
@@ -207,6 +223,7 @@ python import_script.py validate translation/script.json
 === Translation Validation ===
 Total strings: 1234
 Translated: 567
+Untranslated: 667
 Progress: 45.9%
 
 By context:
@@ -219,7 +236,13 @@ By file:
   Map001.json: 200/400 (50.0%)
   CommonEvents.json: 150/300 (50.0%)
   ...
+
+已將 500 條未翻譯文本輸出至: exported/untranslated.json
+  (context 篩選: dialog、choice)
+請填寫各條目的 translated 欄位後，使用 import 指令導入。
 ```
+
+匯出的 `untranslated.json` 結構與 `script.json` 相同，填妥 `translated` 欄位後可直接呼叫 `import` 指令合併回遊戲。
 
 ### 步驟 4：導入翻譯
 
